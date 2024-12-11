@@ -1,7 +1,7 @@
 # PHP Client for Code Inc.'s Document Cloud
 
 [![Code Inc.](https://img.shields.io/badge/Code%20Inc.-Docunemt%20Cloud-blue)](https://www.codeinc.co)
-![PHPUnit](https://github.com/codeinchq/document-cloud-php-client/actions/workflows/phpunit.yml/badge.svg)
+[![PHPUnit](https://github.com/codeinchq/document-cloud-php-client/actions/workflows/phpunit.yml/badge.svg)](https://github.com/codeinchq/document-cloud-php-client/actions/workflows/phpunit.yml)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/codeinchq/document-cloud-php-client?label=Version)
 
 > [!CAUTION]
