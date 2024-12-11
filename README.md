@@ -22,9 +22,16 @@ composer require codeinc/document-cloud-client
 This API allows you to convert office documents to PDF.
 
 ```php
-use CodeInc\Office2PdfClient\Office2PdfClient;
-use CodeInc\Office2PdfClient\ConvertOptions;
-use CodeInc\Office2PdfClient\Format;
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Office2Pdf\Office2Pdf;
+use CodeInc\DocumentCloud\Office2Pdf\ConvertOptions;
+use CodeInc\DocumentCloud\Office2Pdf\Format;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\UnsupportedFileTypeException;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
 
 $srcDocPath = '/path/to/local/file.docx';
 $destPdfPath = '/path/to/local/file.pdf';
@@ -34,39 +41,36 @@ $convertOption = new ConvertOptions(
     format: Format::json
 );
 
-$client = new Office2PdfClient('http://localhost:3000/');
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$office2Pdf = new Office2Pdf($client);
 
 try {
-    $client = new Office2PdfClient($apiBaseUri);
-
     // convert 
-    $pdfStream = $client->convert(
-        $client->createStreamFromFile($srcDocPath), 
+    $pdfStream = $office2Pdf->convert(
+        StreamUtils::createStreamFromFile('/path/to/local/file.docx'), 
         $convertOption
     );
     
    // save the PDF
-   $client->saveStreamToFile($pdfStream, $destPdfPath); 
+   StreamUtils::saveStreamToFile($pdfStream, '/path/to/local/file.pdf'); 
 }
-catch (Exception $e) {
+catch (UnsupportedFileTypeException|NetworkException|InvalidResponseException|FileOpenException|FileWriteException $e) {
     // handle exception
 }
 ```
 
 #### Validating the support of a file format:
 ```php
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Office2Pdf\Office2Pdf;
 
-use CodeInc\Office2PdfClient\Office2PdfClient;
-use CodeInc\Office2PdfClient\Exception;
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$office2Pdf = new Office2Pdf($client);
 
-$filename = 'a-file.docx';
-
-$client = new Office2PdfClient('http://localhost:3000/');
-
-$client->isSupported("a-file.docx"); // returns true
-$client->isSupported("a-file"); // returns true 
-$client->isSupported("a-file", false); // returns false (the second argument is the strict mode)
-$client->isSupported("a-file.pdf"); // returns false
+$office2Pdf->supports('a-file.docx'); // returns true
+$office2Pdf->supports('a-file'); // returns true 
+$office2Pdf->supports('a-file', false); // returns false (the second argument is the strict mode)
+$office2Pdf->supports('a-file.pdf'); // returns false
 ``` 
 
 ### Pdf2Img API
@@ -74,61 +78,70 @@ $client->isSupported("a-file.pdf"); // returns false
 This API allows you to convert PDF documents to images.
 
 #### Base example:
-```php
-use CodeInc\Pdf2ImgClient\Pdf2ImgClient;
-use CodeInc\Pdf2ImgClient\Exception;
 
-$apiBaseUri = 'http://localhost:3000/';
-$localPdfPath = '/path/to/local/file.pdf';
+```php
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Pdf2Img\Pdf2Img;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$pdf2Img = new Pdf2Img($client);
 
 try {
-    $client = new Pdf2ImgClient($apiBaseUri);
-
+    // Open the PDF file
+    $pdfStream = StreamUtils::createStreamFromFile('/path/to/local/file.pdf');
+    
     // convert 
-    $image = $client->convert(
-        $client->createStreamFromFile($localPdfPath)
-    );
+    $imageStream = $pdf2Img->convert($pdfStream, $convertOption);
     
     // display the image 
     header('Content-Type: image/webp');
-    echo (string)$image;
+    echo $imageStream->getContents();
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException $e) {
     // handle exception
 }
 ```
 
 #### With options:
+
 ```php
-use CodeInc\Pdf2ImgClient\Pdf2ImgClient;
-use CodeInc\Pdf2ImgClient\ConvertOptions;
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Pdf2Img\Pdf2Img;
+use CodeInc\DocumentCloud\Pdf2Img\Pdf2ImgConvertOptions;
+use CodeInc\DocumentCloud\Pdf2Img\Pdf2ImgOutputFormat;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
 
-$apiBaseUri = 'http://localhost:3000/';
-$localPdfPath = '/path/to/local/file.pdf';
-$destinationPath = '/path/to/destination/file.jpg';
-$convertOption = new ConvertOptions(
-    format: 'jpg',
-    page: 3,
-    density: 300,
-    height: 800,
-    width: 800,
-    background: 'red',
-    quality: 90,
-);
-
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$pdf2Img = new Pdf2Img($client);
+    
 try {
-    $client = new Pdf2ImgClient($apiBaseUri);
-
-    // convert 
-    $image = $client->convertLocalFile(
-        $client->createStreamFromFile($localPdfPath),
-        $convertOption
-     );
+    // Open the PDF file
+    $pdfStream = StreamUtils::createStreamFromFile('/path/to/local/file.pdf');
+    
+    // Convert the PDF to an image
+    $convertOption = new Pdf2ImgConvertOptions(
+        format: Pdf2ImgOutputFormat::jpeg,
+        page: 3,
+        density: 300,
+        height: 800,
+        width: 800,
+        background: 'red',
+        quality: 90,
+    ); 
+    $imageStream = $pdf2Img->convert($pdfStream, $convertOption);
     
     // saves the image to a file 
-    $client->saveStreamToFile($image, $destinationPath);
+    StreamUtils::saveStreamToFile($imageStream, '/path/to/destination/file.jpg');
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException|FileWriteException $e) {
     // handle exception
 }
 ```
@@ -138,82 +151,96 @@ catch (Exception $e) {
 This API allows you to convert PDF documents to text. 
 
 #### Extracting text from a local file:
-```php
-use CodeInc\Pdf2TxtClient\Pdf2TxtClient;
-use CodeInc\Pdf2TxtClient\Exception;
 
-$apiBaseUri = 'http://localhost:3000/';
-$localPdfPath = '/path/to/local/file.pdf';
+```php
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Pdf2Txt\Pdf2Txt;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
+
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$pdf2Txt = new Pdf2Txt($client);
 
 try {
-    // convert
-    $client = new Pdf2TxtClient($apiBaseUri);
-    $stream = $client->extract(
-        $client->createStreamFromFile($localPdfPath)
-    );
+    // Open the PDF file
+    $pdfStream = StreamUtils::createStreamFromFile('/path/to/local/file.pdf');
     
-    // display the text
-    echo (string)$stream;
+    // Extract the textual content
+    $textStream = $pdf2Txt->extract($pdfStream);
+    
+    // Display the textual content
+    echo $textStream->getContents();
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException|FileWriteException $e) {
     // handle exception
 }
 ```
 
 #### With additional options:
-```php
-use CodeInc\Pdf2TxtClient\Pdf2TxtClient;
-use CodeInc\Pdf2TxtClient\ConvertOptions;
-use CodeInc\Pdf2TxtClient\Format;
 
-$apiBaseUri = 'http://localhost:3000/';
-$localPdfPath = '/path/to/local/file.pdf';
-$convertOption = new ConvertOptions(
-    firstPage: 2,
-    lastPage: 3,
-    format: Format::json
-);
+```php
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Pdf2Txt\Pdf2Txt;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$pdf2Txt = new Pdf2Txt($client);
 
 try {
-    $client = new Pdf2TxtClient($apiBaseUri);
-
-    // convert 
-    $jsonResponse = $client->extract(
-        $client->createStreamFromFile($localPdfPath),
+    // Open the PDF file
+    $pdfStream = StreamUtils::createStreamFromFile('/path/to/local/file.pdf');
+    
+    // Extract the textual content
+    $convertOption = new ConvertOptions(
+        firstPage: 2,
+        lastPage: 3,
+        format: Format::json
+    );
+    $jsonStream = $pdf2Txt->extract(
+        $pdfStream,
         $convertOption
     );
     
-   // display the text in a JSON format
-   $decodedJson = $client->processJsonResponse($jsonResponse);
+   // Display the extracted text
+   $decodedJson = json_decode($jsonStream->getContents(), true);
    var_dump($decodedJson); 
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException $e) {
     // handle exception
 }
 ```
 
 #### Saving the extracted text to a file:
-```php
-use CodeInc\Pdf2TxtClient\Pdf2TxtClient;
-use CodeInc\Pdf2TxtClient\ConvertOptions;
-use CodeInc\Pdf2TxtClient\Format;
 
-$apiBaseUri = 'http://localhost:3000/';
-$localPdfPath = '/path/to/local/file.pdf';
-destinationTextPath = '/path/to/local/file.txt';
+```php
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Pdf2Txt\Pdf2Txt;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
+
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$pdf2Txt = new Pdf2Txt($client);
 
 try {
-    $client = new Pdf2TxtClient($apiBaseUri);
+    // Open the PDF file
+    $pdfStream = StreamUtils::createStreamFromFile('/path/to/local/file.pdf');
 
-    // convert
-    $stream = $client->extract(
-        $client->createStreamFromFile($localPdfPath)
-    );
+    // Extract the textual content
+    $textStream = $pdf2Txt->extract($pdfStream);
     
-    // save the text to a file
-    $client->saveStreamToFile($stream, $destinationTextPath);
+    // Save the textual content to a file
+    StreamUtils::saveStreamToFile($textStream, '/path/to/local/file.txt');
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException|FileWriteException $e) {
     // handle exception
 }
 ```
@@ -224,66 +251,69 @@ This API allows you to add a watermark to a PDF document.
 
 #### A simple scenario to apply a watermark to an image and display the result:
 ```php
-use CodeInc\WatermarkerClient\WatermarkerClient;
-use CodeInc\WatermarkerClient\Exception;
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Watermarker\Watermarker;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
 
-$apiBaseUri = 'http://localhost:3000/';
-$anImage = '/path/to/local/image.png';
-$theWatermark = '/path/to/local/watermark.png';
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$watermaker = new Watermarker($client);
 
 try {
-    $client = new WatermarkerClient($apiBaseUri);
+    // Open the image and the watermark
+    $anImageStream = StreamUtils::createStreamFromFile('/path/to/local/image.png');
+    $theWatermarkStream = StreamUtils::createStreamFromFile('/path/to/local/watermark.png');
 
-    // apply the watermark
-    $watermarkedImageStream = $client->apply(
-        $client->createStreamFromFile($anImage),
-        $client->createStreamFromFile($theWatermark),
-    );
+    // Apply the watermark
+    $watermarkedImageStream = $watermaker->apply($anImageStream, $theWatermarkStream);
     
-    // display the watermarked image
+    // Display the watermarked image
     header('Content-Type: image/png');
-    echo (string)$watermarkedImageStream;
+    echo $watermarkedImageStream->getContents();
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException $e) {
     // handle exception
 }
 ```
 
 #### A mire complex scenario to apply a watermark to an image with options and save the result to a file:
 ```php
-use CodeInc\WatermarkerClient\WatermarkerClient;
-use CodeInc\WatermarkerClient\ConvertOptions;
-use CodeInc\WatermarkerClient\Position;
-use CodeInc\WatermarkerClient\Format;
+use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Watermarker\Watermarker;
+use CodeInc\DocumentCloud\Watermarker\WatermarkerConvertOptions;
+use CodeInc\DocumentCloud\Watermarker\WatermarkPosition;
+use CodeInc\DocumentCloud\Watermarker\WatermarkerOutputFormat;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Exception\NetworkException;
+use CodeInc\DocumentCloud\Exception\InvalidResponseException;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
 
-$apiBaseUri = 'http://localhost:3000/';
-$theImageStream = '/path/to/local/image.png';
-$theWatermarkStream = '/path/to/local/watermark.png';
-$theDestinationFile = '/path/to/local/destination.png';
-$convertOption = new ConvertOptions(
-    size: 50,
-    position: Position::topRight,
-    format: Format::jpg,
-    quality: 80,
-    blur: 3,
-    opacity: 75
-);
+$client = new Client('your-api-key'); // If the key is not specified, the library will try to get it from the `DOCUMENT_CLOUD_API_KEY` environment variable.
+$watermaker = new Watermarker($client);
 
 try {
-    $streamFactory = Psr17FactoryDiscovery::findStreamFactory();
-    $client = new WatermarkerClient($apiBaseUri);
-
-    // apply the watermark
-    $watermarkedImageStream = $client->apply(
-        $client->createStreamFromFile($theImageStream),
-        $client->createStreamFromFile($theWatermarkStream),
-        $convertOption
+    // Open the image and the watermark
+    $anImageStream = StreamUtils::createStreamFromFile('/path/to/local/image.png');
+    $theWatermarkStream = StreamUtils::createStreamFromFile('/path/to/local/watermark.png');
+    
+    // Apply the watermark
+    $convertOption = new WatermarkerConvertOptions(
+        size: 50,
+        position: WatermarkPosition::topRight,
+        format: WatermarkerOutputFormat::jpg,
+        quality: 80,
+        blur: 3,
+        opacity: 75
     );
+    $watermarkedImageStream = $client->apply($anImageStream, $theWatermarkStream, $convertOption);
     
     // save the watermarked image
-    $client->saveStreamToFile($watermarkedImageStream, $theDestinationFile);
+    StreamUtils::saveStreamToFile($watermarkedImageStream, '/path/to/local/file.jpg');
 }
-catch (Exception $e) {
+catch (NetworkException|InvalidResponseException|FileOpenException|FileWriteException $e) {
     // handle exception
 }
 ```
