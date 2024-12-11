@@ -1,6 +1,6 @@
 {
   "name": "codeinc/document-cloud-client",
-  "version": "v0.3",
+  "version": "v0.4",
   "description": "PHP Client for Code Inc.'s Document Cloud",
   "homepage": "https://github.com/codeinchq/document-cloud-php-client",
   "type": "library",
