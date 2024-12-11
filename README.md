@@ -2,7 +2,7 @@
 
 [![Code Inc.](https://img.shields.io/badge/Code%20Inc.-Document%20Cloud-blue)](https://www.codeinc.co)
 [![PHPUnit](https://github.com/codeinchq/document-cloud-php-client/actions/workflows/phpunit.yml/badge.svg)](https://github.com/codeinchq/document-cloud-php-client/actions/workflows/phpunit.yml)
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/codeinchq/document-cloud-php-client?label=Version)
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/codeinchq/document-cloud-php-client?label=Version)](https://github.com/codeinchq/document-cloud-php-client/releases/latest)
 
 > [!CAUTION]
 > It is a work in progress and is not yet ready for production use.
