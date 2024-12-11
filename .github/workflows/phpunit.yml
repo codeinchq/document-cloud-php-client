@@ -28,5 +28,5 @@ jobs:
       # Run tests
       - name: Run tests
         env:
-          SERVICES_CLOUD_API_KEY: ${{ secrets.SERVICES_CLOUD_API_KEY }}
+          DOCUMENT_CLOUD_API_KEY: ${{ secrets.DOCUMENT_CLOUD_API_KEY }}
         run: vendor/bin/phpunit tests
