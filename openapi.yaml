@@ -1,0 +1,385 @@
+swagger: '2.0'
+info:
+  title: Document Cloud EU API
+  description: "Document Cloud EU API provides a set of services for document processing, including converting office documents to PDF, extracting text from PDF files, converting PDF files to images, and applying watermarks to images."
+  version: v1.0
+schemes:
+  - https
+produces:
+  - application/json
+  - application/pdf
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: x-api-key
+    in: header
+basePath: /
+paths:
+  ########################################################################
+  # Office2Pdf paths
+  ########################################################################
+  /office2pdf/v1/convert:
+    post:
+      operationId: office2pdfConvert
+      summary: "Convert .docx to .pdf"
+      description: "Uploads a .docx file and returns a converted .pdf file."
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/pdf
+      parameters:
+        - in: formData
+          name: file
+          description: "The .docx file to be converted."
+          required: true
+          type: string
+      responses:
+        200:
+          description: "Successfully converted the file."
+          schema:
+            type: string
+          headers:
+            Content-Disposition:
+              type: string
+              description: 'Indicates the filename for the converted file, e.g., "example.pdf".'
+        400:
+          description: "Bad request. The input file is invalid or missing."
+        500:
+          description: "Internal server error. Conversion failed."
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://office2pdf-v1-eu-196665172096.europe-west1.run.app/convert
+        path_translation: CONSTANT_ADDRESS
+        deadline: 60.0
+
+  /office2pdf/v1/health:
+    get:
+      operationId: office2pdfHealth
+      summary: "Health check endpoint"
+      description: "Returns a plain text response indicating the service is running."
+      produces:
+        - text/plain
+      responses:
+        200:
+          description: "Service is running and returns 'ok'."
+          schema:
+            type: string
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://office2pdf-v1-eu-196665172096.europe-west1.run.app/health
+        path_translation: CONSTANT_ADDRESS
+
+
+  ########################################################################
+  # Pdf2Img paths
+  ########################################################################
+  /pdf2img/v1/convert:
+    post:
+      operationId: pdf2imgConvert
+      summary: "Convert PDF to Images"
+      description: >
+        Converts a PDF file into images based on specified parameters.
+        Returns the converted image in the response body or an error message if the conversion fails.
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+        - "image/*"
+      parameters:
+        - name: "file"
+          in: "formData"
+          description: "The PDF file to be converted."
+          required: true
+          type: "string"
+        - name: "format"
+          in: "formData"
+          description: "The format of the output image (e.g., jpg, png). Default is jpg."
+          required: false
+          type: "string"
+        - name: "density"
+          in: "formData"
+          description: "The density of the output image. Default is 300."
+          required: false
+          type: "integer"
+        - name: "height"
+          in: "formData"
+          description: "The height of the output image in pixels. Default is 1000."
+          required: false
+          type: "integer"
+        - name: "width"
+          in: "formData"
+          description: "The width of the output image in pixels. Default is 1000."
+          required: false
+          type: "integer"
+        - name: "background"
+          in: "formData"
+          description: "The background color of the output image (e.g., white, #F60). Default is white."
+          required: false
+          type: "string"
+        - name: "quality"
+          in: "formData"
+          description: "The quality of the output image in percentage. Default is 80."
+          required: false
+          type: "integer"
+        - name: "page"
+          in: "formData"
+          description: "The page of the PDF to convert, starting from 1. Default is 1."
+          required: false
+          type: "integer"
+      responses:
+        200:
+          description: "Conversion successful. The image is returned in the response body."
+          schema:
+            type: "string"
+        400:
+          description: "Conversion failed due to client error."
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message explaining the failure."
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://pdf2img-v1-eu-196665172096.europe-west1.run.app/convert
+        path_translation: CONSTANT_ADDRESS
+        deadline: 60.0
+
+  /pdf2img/v1/health:
+    get:
+      operationId: pdf2imgHealth
+      summary: "Health check endpoint"
+      description: "Returns a plain text response indicating the service is running."
+      produces:
+        - text/plain
+      responses:
+        200:
+          description: "Service is running and returns 'ok'."
+          schema:
+            type: string
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://pdf2img-v1-eu-196665172096.europe-west1.run.app/health
+        path_translation: CONSTANT_ADDRESS
+
+  ########################################################################
+  # Pdf2Txt paths
+  ########################################################################
+  /pdf2txt/v1/extract:
+    post:
+      operationId: pdf2txtExtract
+      summary: "Extract content from a PDF file"
+      description: "Extracts text or JSON content from an uploaded PDF file."
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "text/plain"
+        - "application/json"
+      parameters:
+        - name: "file"
+          in: "formData"
+          description: "The PDF file to be processed."
+          required: true
+          type: "string"
+        - name: "firstPage"
+          in: "formData"
+          description: "The first page to extract. Default is 1."
+          required: false
+          type: "integer"
+          format: "int32"
+          default: 1
+        - name: "lastPage"
+          in: "formData"
+          description: "The last page to extract. Default is the last page of the document."
+          required: false
+          type: "integer"
+          format: "int32"
+        - name: "password"
+          in: "formData"
+          description: "The password to unlock the PDF. Default is none."
+          required: false
+          type: "string"
+        - name: "normalizeWhitespace"
+          in: "formData"
+          description: "Normalize whitespace in extracted text. Default is true."
+          required: false
+          type: "boolean"
+          default: true
+        - name: "format"
+          in: "formData"
+          description: "The output format: text or json. Default is text."
+          required: false
+          type: "string"
+          enum:
+            - "text"
+            - "json"
+          default: "text"
+      responses:
+        200:
+          description: "Conversion successful"
+          schema:
+            type: "string"
+            description: "The extracted text or JSON object."
+        400:
+          description: "Error occurred"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message"
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://pdf2txt-v1-eu-196665172096.europe-west1.run.app/extract
+        path_translation: CONSTANT_ADDRESS
+        deadline: 60.0
+
+  /pdf2txt/v1/health:
+    get:
+      operationId: pdf2txtHealth
+      summary: "Health check endpoint"
+      description: "Returns a plain text response indicating the service is running."
+      produces:
+        - text/plain
+      responses:
+        200:
+          description: "Service is running and returns 'ok'."
+          schema:
+            type: string
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://pdf2txt-v1-eu-196665172096.europe-west1.run.app/health
+        path_translation: CONSTANT_ADDRESS
+
+  ########################################################################
+  # Watermarker paths
+  ########################################################################
+  /watermarker/v1/apply:
+    post:
+      operationId: watermarkerV1ApplyWatermark
+      summary: "Apply a watermark to an image"
+      description: "Applies a watermark to an uploaded image with optional customization parameters."
+      consumes:
+        - multipart/form-data
+      produces:
+        - image/png
+        - image/jpeg
+        - image/gif
+      parameters:
+        - name: image
+          in: formData
+          description: "The image to apply the watermark to."
+          required: true
+          type: string
+        - name: watermark
+          in: formData
+          description: "The watermark to apply to the image."
+          required: true
+          type: string
+        - name: size
+          in: formData
+          description: "The size of the watermark in percentage relative to the image. Default is 75."
+          required: false
+          type: integer
+          format: int32
+          default: 75
+        - name: position
+          in: formData
+          description: "The position of the watermark. Default is center."
+          required: false
+          type: string
+          enum:
+            - center
+            - top-left
+            - top
+            - top-right
+            - left
+            - right
+            - bottom-left
+            - bottom
+            - bottom-right
+          default: center
+        - name: padding
+          in: formData
+          description: "The padding between the watermark and the image edge (ignored if position is center). Default is 10."
+          required: false
+          type: integer
+          format: int32
+          default: 10
+        - name: format
+          in: formData
+          description: "The format of the output image. Default is png."
+          required: false
+          type: string
+          enum:
+            - jpg
+            - png
+            - gif
+          default: png
+        - name: quality
+          in: formData
+          description: "The quality of the output image (0-100, ignored for png and gif). Default is 100."
+          required: false
+          type: integer
+          format: int32
+          default: 100
+        - name: blur
+          in: formData
+          description: "The blur radius of the background behind the watermark. Default is 0."
+          required: false
+          type: integer
+          format: int32
+          default: 0
+        - name: opacity
+          in: formData
+          description: "The opacity of the watermark (0-100). Default is 100."
+          required: false
+          type: integer
+          format: int32
+          default: 100
+      responses:
+        200:
+          description: "Watermarking successful"
+          schema:
+            type: string
+            description: "The watermarked image."
+            format: binary
+        400:
+          description: "Error occurred"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: "Error message"
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://watermarker-v1-eu-196665172096.europe-west1.run.app/apply
+        path_translation: CONSTANT_ADDRESS
+        deadline: 60.0
+
+  /watermarker/v1/health:
+    get:
+      operationId: watermarkerV1Health
+      summary: "Health check endpoint"
+      description: "Returns a plain text response indicating the service is running."
+      produces:
+        - text/plain
+      responses:
+        200:
+          description: "Service is running and returns 'ok'."
+          schema:
+            type: string
+      security:
+        - api_key: [ ]
+      x-google-backend:
+        address: https://watermarker-v1-eu-196665172096.europe-west1.run.app/health
+        path_translation: CONSTANT_ADDRESS
+        deadline: 60.0
