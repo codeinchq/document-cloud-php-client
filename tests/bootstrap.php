@@ -10,5 +10,5 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 // Load .env file
 if (file_exists(__DIR__.'/../.env.test')) {
-    Dotenv\Dotenv::createImmutable([__DIR__])->load();
+    Dotenv\Dotenv::createImmutable(__DIR__.'/..', '.env.test')->load();
 }
