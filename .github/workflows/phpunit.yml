@@ -25,11 +25,6 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-suggest
 
-      - name: Check Environment Variable
-        env:
-          DOCUMENT_CLOUD_API_KEY: ${{ secrets.DOCUMENT_CLOUD_API_KEY }}
-        run: echo "DOCUMENT_CLOUD_API_KEY=${{ secrets.DOCUMENT_CLOUD_API_KEY }}"
-
       # Run tests
       - name: Run tests
         env:
