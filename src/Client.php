@@ -45,8 +45,8 @@ readonly class Client implements ClientInterface
      * @throws MissingApiKeyException
      */
     public function __construct(
-        string $apiKey = null,
-        ClientInterface $client = null,
+        ?string $apiKey = null,
+        ?ClientInterface $client = null,
     ) {
         $apiKey = $apiKey ?? $_ENV['DOCUMENT_CLOUD_API_KEY'] ?? null;
         if (!$apiKey) {
