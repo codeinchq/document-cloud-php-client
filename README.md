@@ -9,10 +9,10 @@
 
 ## Installation
 
-The library is available on [Packagist](https://packagist.org/packages/codeinc/services-cloud-client). The recommended way to install it is via Composer:
+The library is available on [Packagist](https://packagist.org/packages/codeinc/document-cloud-client). The recommended way to install it is via Composer:
 
 ```bash
-composer require codeinc/services-cloud-client
+composer require codeinc/document-cloud-client
 ```
 
 ## Available APIs
@@ -71,53 +71,221 @@ $client->isSupported("a-file.pdf"); // returns false
 
 ### Pdf2Img API
 
-This API allows you to convert PDF documents to images. For more information see [this documentation](https://github.com/codeinchq/pdf2img-php-client?tab=readme-ov-file#usage).
+This API allows you to convert PDF documents to images.
 
-The Pdf2Img client can be accessed using:
-
+#### Base example:
 ```php
-use CodeInc\ServicesCloud\Client;
+use CodeInc\Pdf2ImgClient\Pdf2ImgClient;
+use CodeInc\Pdf2ImgClient\Exception;
 
-// Create a new client
-$servicesCloudClient = new Client('my api key');
+$apiBaseUri = 'http://localhost:3000/';
+$localPdfPath = '/path/to/local/file.pdf';
 
-// Convert a stream using the Pdf2Img API
-$response = $servicesCloudClient->pdf2Img()->convert(/* a PDF stream */);
+try {
+    $client = new Pdf2ImgClient($apiBaseUri);
+
+    // convert 
+    $image = $client->convert(
+        $client->createStreamFromFile($localPdfPath)
+    );
+    
+    // display the image 
+    header('Content-Type: image/webp');
+    echo (string)$image;
+}
+catch (Exception $e) {
+    // handle exception
+}
+```
+
+#### With options:
+```php
+use CodeInc\Pdf2ImgClient\Pdf2ImgClient;
+use CodeInc\Pdf2ImgClient\ConvertOptions;
+
+$apiBaseUri = 'http://localhost:3000/';
+$localPdfPath = '/path/to/local/file.pdf';
+$destinationPath = '/path/to/destination/file.jpg';
+$convertOption = new ConvertOptions(
+    format: 'jpg',
+    page: 3,
+    density: 300,
+    height: 800,
+    width: 800,
+    background: 'red',
+    quality: 90,
+);
+
+try {
+    $client = new Pdf2ImgClient($apiBaseUri);
+
+    // convert 
+    $image = $client->convertLocalFile(
+        $client->createStreamFromFile($localPdfPath),
+        $convertOption
+     );
+    
+    // saves the image to a file 
+    $client->saveStreamToFile($image, $destinationPath);
+}
+catch (Exception $e) {
+    // handle exception
+}
 ```
 
 ### Pdf2Txt API
 
-This API allows you to convert PDF documents to text. For more information see [this documentation](https://github.com/codeinchq/pdf2txt-php-client?tab=readme-ov-file#usage).
+This API allows you to convert PDF documents to text. 
 
-The Pdf2Txt client can be accessed using:
-
+#### Extracting text from a local file:
 ```php
-use CodeInc\ServicesCloud\Client;
+use CodeInc\Pdf2TxtClient\Pdf2TxtClient;
+use CodeInc\Pdf2TxtClient\Exception;
 
-// Create a new client
-$servicesCloudClient = new Client('my api key');
+$apiBaseUri = 'http://localhost:3000/';
+$localPdfPath = '/path/to/local/file.pdf';
 
-// Extract text using the Pdf2Txt API
-$response = $servicesCloudClient->pdf2Txt()->extract(/* a PDF stream */);
+try {
+    // convert
+    $client = new Pdf2TxtClient($apiBaseUri);
+    $stream = $client->extract(
+        $client->createStreamFromFile($localPdfPath)
+    );
+    
+    // display the text
+    echo (string)$stream;
+}
+catch (Exception $e) {
+    // handle exception
+}
+```
+
+#### With additional options:
+```php
+use CodeInc\Pdf2TxtClient\Pdf2TxtClient;
+use CodeInc\Pdf2TxtClient\ConvertOptions;
+use CodeInc\Pdf2TxtClient\Format;
+
+$apiBaseUri = 'http://localhost:3000/';
+$localPdfPath = '/path/to/local/file.pdf';
+$convertOption = new ConvertOptions(
+    firstPage: 2,
+    lastPage: 3,
+    format: Format::json
+);
+
+try {
+    $client = new Pdf2TxtClient($apiBaseUri);
+
+    // convert 
+    $jsonResponse = $client->extract(
+        $client->createStreamFromFile($localPdfPath),
+        $convertOption
+    );
+    
+   // display the text in a JSON format
+   $decodedJson = $client->processJsonResponse($jsonResponse);
+   var_dump($decodedJson); 
+}
+catch (Exception $e) {
+    // handle exception
+}
+```
+
+#### Saving the extracted text to a file:
+```php
+use CodeInc\Pdf2TxtClient\Pdf2TxtClient;
+use CodeInc\Pdf2TxtClient\ConvertOptions;
+use CodeInc\Pdf2TxtClient\Format;
+
+$apiBaseUri = 'http://localhost:3000/';
+$localPdfPath = '/path/to/local/file.pdf';
+destinationTextPath = '/path/to/local/file.txt';
+
+try {
+    $client = new Pdf2TxtClient($apiBaseUri);
+
+    // convert
+    $stream = $client->extract(
+        $client->createStreamFromFile($localPdfPath)
+    );
+    
+    // save the text to a file
+    $client->saveStreamToFile($stream, $destinationTextPath);
+}
+catch (Exception $e) {
+    // handle exception
+}
 ```
 
 ### Watermarker API
 
-This API allows you to add a watermark to a PDF document. For more information see [this documentation](https://github.com/codeinchq/watermarker-php-client?tab=readme-ov-file#usage).
+This API allows you to add a watermark to a PDF document. 
 
-The Watermarker client can be accessed using:
-
+#### A simple scenario to apply a watermark to an image and display the result:
 ```php
-use CodeInc\ServicesCloud\Client;
+use CodeInc\WatermarkerClient\WatermarkerClient;
+use CodeInc\WatermarkerClient\Exception;
 
-// Create a new client
-$servicesCloudClient = new Client('my api key');
+$apiBaseUri = 'http://localhost:3000/';
+$anImage = '/path/to/local/image.png';
+$theWatermark = '/path/to/local/watermark.png';
 
-// Apply a watermark using the Watermarker API
-$response = $servicesCloudClient->watermarker()->apply(
-    /* an image stream*/, 
-    /* a PDF stream */
+try {
+    $client = new WatermarkerClient($apiBaseUri);
+
+    // apply the watermark
+    $watermarkedImageStream = $client->apply(
+        $client->createStreamFromFile($anImage),
+        $client->createStreamFromFile($theWatermark),
+    );
+    
+    // display the watermarked image
+    header('Content-Type: image/png');
+    echo (string)$watermarkedImageStream;
+}
+catch (Exception $e) {
+    // handle exception
+}
+```
+
+#### A mire complex scenario to apply a watermark to an image with options and save the result to a file:
+```php
+use CodeInc\WatermarkerClient\WatermarkerClient;
+use CodeInc\WatermarkerClient\ConvertOptions;
+use CodeInc\WatermarkerClient\Position;
+use CodeInc\WatermarkerClient\Format;
+
+$apiBaseUri = 'http://localhost:3000/';
+$theImageStream = '/path/to/local/image.png';
+$theWatermarkStream = '/path/to/local/watermark.png';
+$theDestinationFile = '/path/to/local/destination.png';
+$convertOption = new ConvertOptions(
+    size: 50,
+    position: Position::topRight,
+    format: Format::jpg,
+    quality: 80,
+    blur: 3,
+    opacity: 75
 );
+
+try {
+    $streamFactory = Psr17FactoryDiscovery::findStreamFactory();
+    $client = new WatermarkerClient($apiBaseUri);
+
+    // apply the watermark
+    $watermarkedImageStream = $client->apply(
+        $client->createStreamFromFile($theImageStream),
+        $client->createStreamFromFile($theWatermarkStream),
+        $convertOption
+    );
+    
+    // save the watermarked image
+    $client->saveStreamToFile($watermarkedImageStream, $theDestinationFile);
+}
+catch (Exception $e) {
+    // handle exception
+}
 ```
 
 ### Gotenberg API (legacy)
