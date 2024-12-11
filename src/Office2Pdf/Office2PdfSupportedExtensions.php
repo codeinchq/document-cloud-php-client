@@ -37,5 +37,6 @@ enum Office2PdfSupportedExtensions
                 return true;
             }
         }
+        return false;
     }
 }

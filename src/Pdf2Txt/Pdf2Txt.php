@@ -14,7 +14,7 @@ namespace CodeInc\DocumentCloud\Pdf2Txt;
 use CodeInc\DocumentCloud\Client;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
-use CodeInc\DocumentCloud\Util\EndpointUrl;
+use CodeInc\DocumentCloud\Util\UrlUtils;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Message\MultipartStream\MultipartStreamBuilder;
 use JsonException;
@@ -57,12 +57,12 @@ readonly class Pdf2Txt
      * Converts a PDF to text using streams and the PDF2TEXT API.
      *
      * @param StreamInterface|resource|string $stream The PDF content.
-     * @param ConvertOptions $options                 The convert options.
+     * @param Pdf2TxtConvertOptions $options          The convert options.
      * @return StreamInterface
      * @throws InvalidResponseException
      * @throws NetworkException
      */
-    public function extract(mixed $stream, ConvertOptions $options = new ConvertOptions()): StreamInterface
+    public function extract(mixed $stream, Pdf2TxtConvertOptions $options = new Pdf2TxtConvertOptions()): StreamInterface
     {
         try {
             // building the multipart stream
@@ -89,7 +89,7 @@ readonly class Pdf2Txt
             // sending the request
             $response = $this->client->sendRequest(
                 $this->requestFactory
-                    ->createRequest("POST", EndpointUrl::getEndpointUrl($this->apiUrl, '/extract'))
+                    ->createRequest("POST", UrlUtils::getEndpointUrl($this->apiUrl, '/extract'))
                     ->withHeader(
                         "Content-Type",
                         "multipart/form-data; boundary={$multipartStreamBuilder->getBoundary()}"
@@ -115,22 +115,6 @@ readonly class Pdf2Txt
     }
 
     /**
-     * Processes a JSON response from the PDF2TEXT API.
-     *
-     * @param StreamInterface $response
-     * @return array
-     * @throws JsonException
-     */
-    public function processJsonResponse(StreamInterface $response): array
-    {
-        return json_decode(
-            json: (string)$response,
-            associative: true,
-            flags: JSON_THROW_ON_ERROR
-        );
-    }
-
-    /**
      * Health check to verify the service is running.
      *
      * @return bool Health check response, expected to be "ok".
@@ -141,7 +125,7 @@ readonly class Pdf2Txt
             $response = $this->client->sendRequest(
                 $this->requestFactory->createRequest(
                     "GET",
-                    EndpointUrl::getEndpointUrl($this->apiUrl, "/health")
+                    UrlUtils::getEndpointUrl($this->apiUrl, "/health")
                 )
             );
 

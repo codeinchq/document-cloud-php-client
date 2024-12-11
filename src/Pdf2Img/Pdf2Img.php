@@ -14,7 +14,7 @@ namespace CodeInc\DocumentCloud\Pdf2Img;
 use CodeInc\DocumentCloud\Client;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
-use CodeInc\DocumentCloud\Util\EndpointUrl;
+use CodeInc\DocumentCloud\Util\UrlUtils;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Message\MultipartStream\MultipartStreamBuilder;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -54,12 +54,12 @@ readonly class Pdf2Img
 
     /**
      * @param StreamInterface|resource|string $stream
-     * @param ConvertOptions $options
+     * @param Pdf2ImgConvertOptions $options
      * @return StreamInterface
      * @throws NetworkException
      * @throws InvalidResponseException
      */
-    public function convert(mixed $stream, ConvertOptions $options = new ConvertOptions()): StreamInterface
+    public function convert(mixed $stream, Pdf2ImgConvertOptions $options = new Pdf2ImgConvertOptions()): StreamInterface
     {
         $multipartStreamBuilder = (new MultipartStreamBuilder($this->streamFactory))
             ->addResource(
@@ -81,7 +81,7 @@ readonly class Pdf2Img
         try {
             $response = $this->client->sendRequest(
                 $this->requestFactory
-                    ->createRequest("POST", EndpointUrl::getEndpointUrl($this->apiUrl, '/convert'))
+                    ->createRequest("POST", UrlUtils::getEndpointUrl($this->apiUrl, '/convert'))
                     ->withHeader(
                         "Content-Type",
                         "multipart/form-data; boundary={$multipartStreamBuilder->getBoundary()}"
@@ -115,7 +115,7 @@ readonly class Pdf2Img
             $response = $this->client->sendRequest(
                 $this->requestFactory->createRequest(
                     "GET",
-                    EndpointUrl::getEndpointUrl($this->apiUrl, '/health')
+                    UrlUtils::getEndpointUrl($this->apiUrl, '/health')
                 )
             );
 

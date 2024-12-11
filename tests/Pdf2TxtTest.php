@@ -12,11 +12,13 @@ declare(strict_types=1);
 namespace CodeInc\DocumentCloud\Tests;
 
 use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
-use CodeInc\DocumentCloud\Pdf2Txt\ConvertOptions;
+use CodeInc\DocumentCloud\Pdf2Txt\Pdf2TxtConvertOptions;
 use CodeInc\DocumentCloud\Pdf2Txt\Pdf2TxtOutputFormat;
 use CodeInc\DocumentCloud\Pdf2Txt\Pdf2Txt;
+use CodeInc\DocumentCloud\Util\StreamUtils;
 use JsonException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
@@ -27,9 +29,9 @@ use Psr\Http\Message\StreamInterface;
  */
 final class Pdf2TxtTest extends TestCase
 {
-    private const string TEST_PDF_PATH = __DIR__.'/assets/file.pdf';
-    private const string TEST_PDF_RESULT_TXT = __DIR__.'/assets/file.txt';
-    private const string TEST_PDF_RESULT_JSON = __DIR__.'/assets/file.json';
+    private const string TEST_PDF_PATH = __DIR__.'/fixtures/file.pdf';
+    private const string TEST_PDF_RESULT_TXT = __DIR__.'/fixtures/file.txt';
+    private const string TEST_PDF_RESULT_JSON = __DIR__.'/fixtures/file.json';
 
     public function testHealth(): void
     {
@@ -51,12 +53,13 @@ final class Pdf2TxtTest extends TestCase
     /**
      * @throws InvalidResponseException
      * @throws NetworkException
+     * @throws FileOpenException
      */
     public function testExtractionFromLocalFileToText(): void
     {
         $client = new Pdf2Txt();
 
-        $stream = $client->extract($client->streamFactory->createStreamFromFile(self::TEST_PDF_PATH));
+        $stream = $client->extract(StreamUtils::createStreamFromFile(self::TEST_PDF_PATH));
         $this->assertInstanceOf(StreamInterface::class, $stream, "The stream is not valid");
 
         $text = (string)$stream;
@@ -67,14 +70,15 @@ final class Pdf2TxtTest extends TestCase
     /**
      * @throws InvalidResponseException
      * @throws NetworkException
+     * @throws FileOpenException
      */
     public function testExtractionFromLocalFileToRawJson(): void
     {
         $client = new Pdf2Txt();
 
         $stream = $client->extract(
-            $client->streamFactory->createStreamFromFile(self::TEST_PDF_PATH),
-            new ConvertOptions(format: Pdf2TxtOutputFormat::json)
+            StreamUtils::createStreamFromFile(self::TEST_PDF_PATH),
+            new Pdf2TxtConvertOptions(format: Pdf2TxtOutputFormat::json)
         );
         $this->assertInstanceOf(StreamInterface::class, $stream, "The stream is not valid");
 
@@ -85,21 +89,23 @@ final class Pdf2TxtTest extends TestCase
 
     /**
      * @throws InvalidResponseException
-     * @throws JsonException
      * @throws NetworkException
+     * @throws FileOpenException
      */
     public function testExtractionFromLocalFileToProcessedJson(): void
     {
         $client = new Pdf2Txt();
 
         $stream = $client->extract(
-            $client->streamFactory->createStreamFromFile(self::TEST_PDF_PATH),
-            new ConvertOptions(format: Pdf2TxtOutputFormat::json)
+            StreamUtils::createStreamFromFile(self::TEST_PDF_PATH),
+            new Pdf2TxtConvertOptions(format: Pdf2TxtOutputFormat::json)
         );
         $this->assertInstanceOf(StreamInterface::class, $stream, "The stream is not valid");
 
-        $json = $client->processJsonResponse($stream);
-        $this->assertIsArray($json, "The processed JSON is not valid");
+        $rawJson = $stream->getContents();
+        self::assertJson($rawJson, "The JSON is not valid");
+        $json = json_decode($rawJson, true);
+        self::assertIsArray($json, "The processed JSON is not valid");
 
         $expectedJson = json_decode(file_get_contents(self::TEST_PDF_RESULT_JSON), true);
         $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys(

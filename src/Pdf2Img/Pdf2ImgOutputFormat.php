@@ -9,6 +9,10 @@
 
 namespace CodeInc\DocumentCloud\Pdf2Img;
 
+/**
+ * @author  Joan Fabrégat <joan@codeinc.co>
+ * @license https://opensource.org/licenses/MIT MIT
+ */
 enum Pdf2ImgOutputFormat
 {
     case webp;

@@ -15,7 +15,7 @@ use CodeInc\DocumentCloud\Client;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
 use CodeInc\DocumentCloud\Exception\UnsupportedFileTypeException;
-use CodeInc\DocumentCloud\Util\EndpointUrl;
+use CodeInc\DocumentCloud\Util\UrlUtils;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Message\MultipartStream\MultipartStreamBuilder;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -88,7 +88,7 @@ readonly class Office2Pdf
         try {
             $response = $this->client->sendRequest(
                 $this->requestFactory
-                    ->createRequest("POST", EndpointUrl::getEndpointUrl($this->apiUrl, "/convert"))
+                    ->createRequest("POST", UrlUtils::getEndpointUrl($this->apiUrl, "/convert"))
                     ->withHeader(
                         "Content-Type",
                         "multipart/form-data; boundary={$multipartStreamBuilder->getBoundary()}"
@@ -112,7 +112,6 @@ readonly class Office2Pdf
         // returning the response
         return $response->getBody();
     }
-
 
     /**
      * Verifies if the client supports a file.
@@ -141,7 +140,7 @@ readonly class Office2Pdf
             $response = $this->client->sendRequest(
                 $this->requestFactory->createRequest(
                     "GET",
-                    EndpointUrl::getEndpointUrl($this->apiUrl, "/health")
+                    UrlUtils::getEndpointUrl($this->apiUrl, "/health")
                 )
             );
 

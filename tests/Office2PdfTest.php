@@ -12,10 +12,14 @@ declare(strict_types=1);
 namespace CodeInc\DocumentCloud\Tests;
 
 use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
 use CodeInc\DocumentCloud\Exception\UnsupportedFileTypeException;
 use CodeInc\DocumentCloud\Office2Pdf\Office2Pdf;
+use CodeInc\DocumentCloud\Office2Pdf\Office2PdfSupportedExtensions;
+use CodeInc\DocumentCloud\Util\StreamUtils;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 
@@ -25,8 +29,7 @@ use Psr\Http\Message\StreamInterface;
  */
 final class Office2PdfTest extends TestCase
 {
-    private const string TEST_DOC_PATH = __DIR__.'/assets/file.docx';
-    private const string TEST_TEMP_PATH = '/tmp/file.pdf';
+    private const string TEST_DOC_PATH = __DIR__.'/fixtures/file.docx';
 
     public function testHealth(): void
     {
@@ -48,36 +51,34 @@ final class Office2PdfTest extends TestCase
     /**
      * Tests the method convert() with a DOCX file.
      *
-     * @throws UnsupportedFileTypeException
-     * @throws NetworkException
      * @throws InvalidResponseException
+     * @throws NetworkException
+     * @throws UnsupportedFileTypeException
+     * @throws FileOpenException
+     * @throws FileWriteException
      */
     public function testConvert(): void
     {
+        $tempFile = tempnam(sys_get_temp_dir(), 'test');
+
         $this->assertIsWritable(
-            dirname(self::TEST_TEMP_PATH),
-            "The directory ".dirname(self::TEST_TEMP_PATH)." is not writable."
+            dirname($tempFile),
+            "The directory ".dirname($tempFile)." is not writable."
         );
 
         $client = new Office2Pdf();
-        $stream = $client->convert($client->streamFactory->createStreamFromFile(self::TEST_DOC_PATH));
+        $stream = $client->convert(StreamUtils::createStreamFromFile(self::TEST_DOC_PATH));
         $this->assertInstanceOf(StreamInterface::class, $stream, "The method convert() should return a stream.");
 
-        $f = fopen(self::TEST_TEMP_PATH, 'w+');
-        self::assertNotFalse($f, "The test file could not be opened");
-
-        $r = stream_copy_to_stream($stream->detach(), $f);
-        self::assertNotFalse($r, "The stream could not be copied to the test file");
-        fclose($f);
-
-        $this->assertFileExists(self::TEST_TEMP_PATH, "The converted file does not exist.");
+        StreamUtils::saveStreamToFile($stream, $tempFile);
+        $this->assertFileExists($tempFile, "The converted file does not exist.");
         $this->assertStringContainsString(
             '%PDF-1.',
-            file_get_contents(self::TEST_TEMP_PATH),
+            file_get_contents($tempFile),
             "The file self::TEST_TEMP_PATH is not a PDF file."
         );
 
-        unlink(self::TEST_TEMP_PATH);
+        unlink($tempFile);
     }
 
     /**
@@ -104,10 +105,10 @@ final class Office2PdfTest extends TestCase
     {
         $client = new Office2Pdf();
 
-        foreach (Office2Pdf::SUPPORTED_EXTENSIONS as $extension) {
+        foreach (Office2PdfSupportedExtensions::cases() as $extension) {
             $this->assertTrue(
-                $client->supports("file.$extension"),
-                "The method supports() should return true for a file with the extension $extension."
+                $client->supports("file.$extension->name"),
+                "The method supports() should return true for a file with the extension $extension->name."
             );
         }
 

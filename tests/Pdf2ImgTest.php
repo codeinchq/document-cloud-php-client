@@ -12,10 +12,14 @@ declare(strict_types=1);
 namespace CodeInc\DocumentCloud\Tests;
 
 use CodeInc\DocumentCloud\Client;
+use CodeInc\DocumentCloud\Exception\FileOpenException;
+use CodeInc\DocumentCloud\Exception\FileWriteException;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
-use CodeInc\DocumentCloud\Pdf2Img\ConvertOptions;
+use CodeInc\DocumentCloud\Pdf2Img\Pdf2ImgConvertOptions;
 use CodeInc\DocumentCloud\Pdf2Img\Pdf2Img;
+use CodeInc\DocumentCloud\Pdf2Img\Pdf2ImgOutputFormat;
+use CodeInc\DocumentCloud\Util\StreamUtils;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 
@@ -27,8 +31,7 @@ use Psr\Http\Message\StreamInterface;
  */
 final class Pdf2ImgTest extends TestCase
 {
-    private const string TEST_PDF_PATH = __DIR__.'/assets/file.pdf';
-    private const string TEST_PDF_RESULT_IMG = '/tmp/file.jpg';
+    private const string TEST_PDF_PATH = __DIR__.'/fixtures/file.pdf';
 
     public function testHealth(): void
     {
@@ -50,11 +53,12 @@ final class Pdf2ImgTest extends TestCase
     /**
      * @throws NetworkException
      * @throws InvalidResponseException
+     * @throws FileOpenException
      */
     public function testConvert(): void
     {
         $client = new Pdf2Img();
-        $stream = $client->convert($client->streamFactory->createStreamFromFile(self::TEST_PDF_PATH));
+        $stream = $client->convert(StreamUtils::createStreamFromFile(self::TEST_PDF_PATH));
         $this->assertInstanceOf(StreamInterface::class, $stream, "The stream is not valid");
 
         $imageContent = (string)$stream;
@@ -64,16 +68,18 @@ final class Pdf2ImgTest extends TestCase
     /**
      * @throws NetworkException
      * @throws InvalidResponseException
+     * @throws FileOpenException
+     * @throws FileWriteException
      */
     public function testConvertWithOptions(): void
     {
-        $this->assertIsWritable(dirname(self::TEST_PDF_RESULT_IMG), "The result file is not writable");
+        $tempFile = tempnam(sys_get_temp_dir(), 'test');
 
         $client = new Pdf2Img();
         $stream = $client->convert(
-            $client->streamFactory->createStreamFromFile(self::TEST_PDF_PATH),
-            new ConvertOptions(
-                format: 'jpeg',
+            StreamUtils::createStreamFromFile(self::TEST_PDF_PATH),
+            new Pdf2ImgConvertOptions(
+                format: Pdf2ImgOutputFormat::jpeg,
                 page: 1,
                 density: 72,
                 height: 300,
@@ -84,19 +90,14 @@ final class Pdf2ImgTest extends TestCase
         );
         $this->assertInstanceOf(StreamInterface::class, $stream, "The stream is not valid");
 
-        $f = fopen(self::TEST_PDF_RESULT_IMG, 'w+');
-        self::assertNotFalse($f, "The test file could not be opened");
-
-        $r = stream_copy_to_stream($stream->detach(), $f);
-        self::assertNotFalse($r, "The stream could not be copied to the test file");
-
-        $this->assertFileExists(self::TEST_PDF_RESULT_IMG, "The result file does not exist");
+        StreamUtils::saveStreamToFile($stream, $tempFile);
+        $this->assertFileExists($tempFile, "The result file does not exist");
         $this->assertStringContainsString(
             'JFIF',
-            file_get_contents(self::TEST_PDF_RESULT_IMG),
+            file_get_contents($tempFile),
             "The image is not valid"
         );
 
-        unlink(self::TEST_PDF_RESULT_IMG);
+        unlink($tempFile);
     }
 }

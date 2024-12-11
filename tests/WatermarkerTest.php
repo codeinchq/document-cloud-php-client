@@ -16,7 +16,8 @@ use CodeInc\DocumentCloud\Exception\FileOpenException;
 use CodeInc\DocumentCloud\Exception\FileWriteException;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
-use CodeInc\DocumentCloud\Watermarker\ConvertOptions;
+use CodeInc\DocumentCloud\Util\StreamUtils;
+use CodeInc\DocumentCloud\Watermarker\WatermarkerConvertOptions;
 use CodeInc\DocumentCloud\Watermarker\WatermarkerOutputFormat;
 use CodeInc\DocumentCloud\Watermarker\WatermarkPosition;
 use CodeInc\DocumentCloud\Watermarker\Watermarker;
@@ -29,9 +30,8 @@ use Psr\Http\Message\StreamInterface;
  */
 final class WatermarkerTest extends TestCase
 {
-    private const string TEST_IMG_PATH = __DIR__.'/assets/doc.png';
-    private const string TEST_WATERMARK_PATH = __DIR__.'/assets/watermark.png';
-    private const string TEST_RESULT_PATH = '/tmp/watermarked.jpg';
+    private const string TEST_IMG_PATH = __DIR__.'/fixtures/doc.png';
+    private const string TEST_WATERMARK_PATH = __DIR__.'/fixtures/watermark.png';
 
     /**
      * @return void
@@ -62,8 +62,8 @@ final class WatermarkerTest extends TestCase
     {
         $client = new Watermarker();
         $stream = $client->apply(
-            $client->createStreamFromFile(self::TEST_IMG_PATH),
-            $client->createStreamFromFile(self::TEST_WATERMARK_PATH)
+            StreamUtils::createStreamFromFile(self::TEST_IMG_PATH),
+            StreamUtils::createStreamFromFile(self::TEST_WATERMARK_PATH)
         );
         $this->assertInstanceOf(StreamInterface::class, $stream, 'The returned value is not a stream');
         $imageContent = (string)$stream;
@@ -78,14 +78,14 @@ final class WatermarkerTest extends TestCase
      */
     public function testWatermarkWithOptions(): void
     {
-        $this->assertIsWritable(dirname(self::TEST_RESULT_PATH), 'The result file is not writable');
+        $tempFile = tempnam(sys_get_temp_dir(), 'test');
 
         $client = new Watermarker();
 
         $stream = $client->apply(
-            $client->createStreamFromFile(self::TEST_IMG_PATH),
-            $client->createStreamFromFile(self::TEST_WATERMARK_PATH),
-            new ConvertOptions(
+            StreamUtils::createStreamFromFile(self::TEST_IMG_PATH),
+            StreamUtils::createStreamFromFile(self::TEST_WATERMARK_PATH),
+            new WatermarkerConvertOptions(
                 size: 50,
                 position: WatermarkPosition::topLeft,
                 format: WatermarkerOutputFormat::jpg,
@@ -97,10 +97,10 @@ final class WatermarkerTest extends TestCase
 
         $this->assertInstanceOf(StreamInterface::class, $stream, 'The returned value is not a stream');
 
-        $client->saveStreamToFile($stream, self::TEST_RESULT_PATH);
-        $this->assertFileExists(self::TEST_RESULT_PATH, 'The result file does not exist');
-        $this->assertStringContainsString('JFIF', file_get_contents(self::TEST_RESULT_PATH), 'The image is not a JPEG');
+        StreamUtils::saveStreamToFile($stream, $tempFile);
+        $this->assertFileExists($tempFile, 'The result file does not exist');
+        $this->assertStringContainsString('JFIF', file_get_contents($tempFile), 'The image is not a JPEG');
 
-        unlink(self::TEST_RESULT_PATH);
+        unlink($tempFile);
     }
 }

@@ -13,10 +13,9 @@ namespace CodeInc\DocumentCloud\Watermarker;
 
 use CodeInc\DocumentCloud\Client;
 use CodeInc\DocumentCloud\Exception\FileOpenException;
-use CodeInc\DocumentCloud\Exception\FileWriteException;
 use CodeInc\DocumentCloud\Exception\InvalidResponseException;
 use CodeInc\DocumentCloud\Exception\NetworkException;
-use CodeInc\DocumentCloud\Util\EndpointUrl;
+use CodeInc\DocumentCloud\Util\UrlUtils;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Message\MultipartStream\MultipartStreamBuilder;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -33,8 +32,8 @@ use Psr\Http\Message\StreamInterface;
  */
 readonly class Watermarker
 {
-    private StreamFactoryInterface $streamFactory;
-    private RequestFactoryInterface $requestFactory;
+    public StreamFactoryInterface $streamFactory;
+    public RequestFactoryInterface $requestFactory;
 
     /**
      * Watermarker constructor.
@@ -59,7 +58,7 @@ readonly class Watermarker
      *
      * @param StreamInterface|resource|string $imageStream     The PDF content.
      * @param StreamInterface|resource|string $watermarkStream The watermark content.
-     * @param ConvertOptions $options                          The convert options.
+     * @param WatermarkerConvertOptions $options               The convert options.
      * @return StreamInterface
      * @throws InvalidResponseException
      * @throws NetworkException
@@ -67,7 +66,7 @@ readonly class Watermarker
     public function apply(
         mixed $imageStream,
         mixed $watermarkStream,
-        ConvertOptions $options = new ConvertOptions()
+        WatermarkerConvertOptions $options = new WatermarkerConvertOptions()
     ): StreamInterface {
         try {
             // building the multipart stream
@@ -89,7 +88,7 @@ readonly class Watermarker
             // sending the request
             $response = $this->client->sendRequest(
                 $this->requestFactory
-                    ->createRequest("POST", EndpointUrl::getEndpointUrl($this->apiUrl, '/apply'))
+                    ->createRequest("POST", UrlUtils::getEndpointUrl($this->apiUrl, '/apply'))
                     ->withHeader(
                         "Content-Type",
                         "multipart/form-data; boundary={$multipartStreamBuilder->getBoundary()}"
@@ -132,28 +131,6 @@ readonly class Watermarker
         return $this->streamFactory->createStreamFromResource($f);
     }
 
-    /**
-     * Saves a stream to a local file.
-     *
-     * @param StreamInterface $stream
-     * @param string $path     The path to the file.
-     * @param string $openMode The mode used to open the file.
-     * @throws FileOpenException
-     * @throws FileWriteException
-     */
-    public function saveStreamToFile(StreamInterface $stream, string $path, string $openMode = 'w'): void
-    {
-        $f = fopen($path, $openMode);
-        if ($f === false) {
-            throw new FileOpenException("The file '$path' could not be opened");
-        }
-
-        if (stream_copy_to_stream($stream->detach(), $f) === false) {
-            throw new FileWriteException("The stream could not be copied to the file '$path'");
-        }
-
-        fclose($f);
-    }
 
     /**
      * Health check to verify the service is running.
@@ -166,7 +143,7 @@ readonly class Watermarker
             $response = $this->client->sendRequest(
                 $this->requestFactory->createRequest(
                     "GET",
-                    EndpointUrl::getEndpointUrl($this->apiUrl, "/health")
+                    UrlUtils::getEndpointUrl($this->apiUrl, "/health")
                 )
             );
 

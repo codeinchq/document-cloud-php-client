@@ -15,7 +15,7 @@ namespace CodeInc\DocumentCloud\Watermarker;
  * @author  Joan Fabrégat <joan@codeinc.co>
  * @license https://opensource.org/licenses/MIT MIT
  */
-final readonly class ConvertOptions
+final readonly class WatermarkerConvertOptions
 {
     /**
      * ConvertOptions constructor.

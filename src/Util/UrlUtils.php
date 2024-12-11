@@ -13,7 +13,7 @@ namespace CodeInc\DocumentCloud\Util;
  * @author  Joan Fabrégat <joan@codeinc.co>
  * @license https://opensource.org/licenses/MIT MIT
  */
-class EndpointUrl
+class UrlUtils
 {
     /**
      * Returns the URL of an endpoint.
