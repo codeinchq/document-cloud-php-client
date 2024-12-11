@@ -288,25 +288,6 @@ catch (Exception $e) {
 }
 ```
 
-### Gotenberg API (legacy)
-
-> [!WARNING]  
-> By default API keys are not authorized to access the Gotenberg API. If you need access to the Gotenberg API, please contact Code Inc. to request authorization.
-
-The legacy Gotenberg v8 API can be accessed using the ServicesCloud client as the Gotenberg HTTP client.
-
-Here is an example implementation:
-
-```php
-use Gotenberg\Gotenberg;
-use Gotenberg\Stream;
-use CodeInc\ServicesCloud\Client;
-
-$response = Gotenberg::send(
-    Gotenberg::libreOffice('https://gotenberg-v8-eu-byzteify.ew.gateway.dev')->convert(/* an Office stream */),
-    new Client('my api key')
-);
-```
 
 ## License
 
